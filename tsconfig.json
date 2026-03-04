@@ -1,0 +1,31 @@
+{
+    "compilerOptions": {
+        "rootDir": "./src",
+        "outDir": "./dist",
+        "module": "nodenext",
+        "moduleResolution": "nodenext",
+        "target": "es2022",
+        "lib": ["ES2022"],
+        "types": ["node"],
+        "sourceMap": true,
+        "declaration": true,
+        "declarationMap": true,
+        "noUncheckedIndexedAccess": true,
+        "exactOptionalPropertyTypes": true,
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        "noImplicitReturns": true,
+        "noImplicitOverride": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        "noFallthroughCasesInSwitch": true,
+        "noPropertyAccessFromIndexSignature": true,
+        "noImplicitAny": true,
+        "strictNullChecks": true,
+        "strict": true,
+        "moduleDetection": "force",
+        "skipLibCheck": true
+    },
+    "include": ["src"],
+    "exclude": ["node_modules", "dist", "drizzle.config.ts", "eslint.config.ts"]
+}
