@@ -8,11 +8,12 @@ const db = drizzle(env.DB_URL, {
             logger.debug("db query", {
                 query,
                 paramCount: params.length,
+                params: env.NODE_ENV === "development" ? params : undefined,
             });
         },
     },
 });
 
-export type DB = typeof db;
+export type DB = Omit<typeof db, "$client">;
 
 export default db;

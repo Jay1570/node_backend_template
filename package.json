@@ -38,11 +38,11 @@
         "@typescript-eslint/eslint-plugin": "^8.55.0",
         "@typescript-eslint/parser": "^8.56.0",
         "drizzle-kit": "^1.0.0-beta.15-859cf75",
-        "eslint": "^10.0.1",
+        "eslint": "^10.2.0",
         "globals": "^17.3.0",
         "jiti": "^2.6.1",
         "tsx": "^4.21.0",
-        "typescript": "^5.9.3",
-        "typescript-eslint": "^8.56.0"
+        "typescript": "^6.x.x",
+        "typescript-eslint": "^8.58.0"
     }
 }

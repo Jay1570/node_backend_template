@@ -1,10 +1,10 @@
 {
+  "version": "8",
   "dialect": "postgres",
-  "id": "ac0627f0-491c-405c-96fc-b37c4c1936c0",
+  "id": "49f5ed1d-dc8e-48c4-bbb5-518fb84cf908",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
-  "version": "8",
   "ddl": [
     {
       "isRlsEnabled": false,
@@ -107,11 +107,11 @@
       "columns": [
         "id"
       ],
-      "nameExplicit": true,
+      "nameExplicit": false,
       "name": "users_pkey",
-      "entityType": "pks",
       "schema": "public",
-      "table": "users"
+      "table": "users",
+      "entityType": "pks"
     },
     {
       "nameExplicit": true,

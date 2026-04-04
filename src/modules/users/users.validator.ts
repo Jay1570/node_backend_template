@@ -1,9 +1,6 @@
-import * as z from "zod";
-import type { LoginPayload, RegisterUserPayload } from "../../types/User.js";
-import type { Result } from "../../types/Result.js";
-import { normalizeZodError } from "../../utils/formatters.js";
+import * as z from "zod/v4";
 
-const registerUserSchema = z.object({
+export const registerUserPayload = z.object({
     name: z
         .string()
         .trim()
@@ -20,47 +17,6 @@ const registerUserSchema = z.object({
         ),
 });
 
-const loginSchema = registerUserSchema.omit({
+export const loginPayload = registerUserPayload.omit({
     name: true,
 });
-export const validateRegisterPayload = (
-    payload: unknown,
-): Result<RegisterUserPayload> => {
-    const result = registerUserSchema.safeParse(payload);
-    if (!result.success) {
-        return {
-            success: false,
-            error: {
-                code: 400,
-                message: "Validation Failed",
-                error: normalizeZodError(result.error),
-            },
-        };
-    }
-
-    return {
-        success: true,
-        data: result.data,
-    };
-};
-
-export const validateLoginPayload = (
-    payload: unknown,
-): Result<LoginPayload> => {
-    const result = loginSchema.safeParse(payload);
-    if (!result.success) {
-        return {
-            success: false,
-            error: {
-                code: 400,
-                message: "Validation Failed",
-                error: normalizeZodError(result.error),
-            },
-        };
-    }
-
-    return {
-        success: true,
-        data: result.data,
-    };
-};
