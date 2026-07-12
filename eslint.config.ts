@@ -1,25 +1,27 @@
-import * as eslint from "@eslint/js";
+import js from "@eslint/js";
+import globals from "globals";
 import tseslint from "typescript-eslint";
 import { defineConfig } from "eslint/config";
 
 export default defineConfig([
-    // Apply the recommended ESLint and TypeScript ESLint strict rules
-    eslint.configs.recommended,
-    ...tseslint.configs.strict, // Includes "strict": "error" configuration
-
-    // General configuration for Node.js ESM files
+    js.configs.recommended,
+    ...tseslint.configs.strict,
     {
-        files: ["**/*.ts"],
+        files: ["**/*.{js,mjs,cjs,ts,mts,cts}"],
         languageOptions: {
             ecmaVersion: 2022,
             sourceType: "module", // Explicitly set source type to module
             globals: {
-                // Define Node.js environment globals
+                ...globals.browser,
+                ...globals.node,
                 process: "readonly",
                 __dirname: "readonly",
                 __filename: "readonly",
             },
         },
+    },
+    {
+        files: ["**/*.{ts,mts,cts}"],
         rules: {
             // Additional custom rules can be added here
             // Example: require "use strict" directives if needed in specific function scopes (optional in ESM)
@@ -34,8 +36,7 @@ export default defineConfig([
             ],
         },
     },
-    // Ignore output directory
     {
-        ignores: ["dist", "node_modules", "drizzle.config.ts"],
+        ignores: ["dist/", "node_modules/", "drizzle.config.ts"],
     },
 ]);

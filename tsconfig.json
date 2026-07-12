@@ -1,10 +1,10 @@
 {
     "compilerOptions": {
-        "rootDir": "./src",
+        "rootDir": ".",
         "outDir": "./dist",
         "module": "nodenext",
         "moduleResolution": "nodenext",
-        "target": "es2022",
+        "target": "esnext",
         "lib": ["ES2022"],
         "types": ["node"],
         "sourceMap": true,
@@ -29,8 +29,16 @@
         "strictNullChecks": true,
         "strict": true,
         "moduleDetection": "force",
-        "skipLibCheck": true
+        "skipLibCheck": true,
+        "paths": {
+            "@/*": ["./src/*"]
+        }
     },
-    "include": ["src"],
-    "exclude": ["node_modules", "dist", "drizzle.config.ts", "eslint.config.ts"]
+    "include": ["src", "src/worker"],
+    "exclude": [
+        "node_modules/",
+        "dist/",
+        "drizzle.config.ts",
+        "eslint.config.js"
+    ]
 }

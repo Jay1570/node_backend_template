@@ -15,8 +15,25 @@ export const registerUserPayload = z.object({
             /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
             "Invalid password",
         ),
+    deviceId: z.string().trim().min(1, "deviceId is required"),
+    deviceName: z.string().trim().max(255).optional(),
+    os: z.string().trim().max(255).optional(),
 });
 
-export const loginPayload = registerUserPayload.omit({
-    name: true,
+export const loginPayload = z.object({
+    email: z.email("Invalid email"),
+    password: z
+        .string()
+        .trim()
+        .max(255, "password should be less than 255 characters"),
+    deviceId: z.string().trim().min(1, "deviceId is required"),
+    deviceName: z.string().trim().max(255).optional(),
+    os: z.string().trim().max(255).optional(),
+});
+
+export const refreshPayload = z.object({
+    refreshToken: z.string().trim().min(1, "refreshToken is required"),
+    deviceId: z.string().trim().min(1, "deviceId is required"),
+    deviceName: z.string().trim().max(255).optional(),
+    os: z.string().trim().max(255).optional(),
 });

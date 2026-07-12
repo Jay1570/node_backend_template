@@ -2,6 +2,7 @@ import env from "../config/env.js";
 import type { Result } from "../types/Result.js";
 import type { JwtUserPayload } from "../types/User.js";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 
 export const signJWT = (payload: JwtUserPayload): string => {
     return jwt.sign(payload, env.JWT_SECRET, {
@@ -22,4 +23,12 @@ export const verifyToken = (token: string): Result<JwtUserPayload> => {
             error: { code: 401, message: "Unauthorized" },
         };
     }
+};
+
+export const generateRefreshToken = (): string => {
+    return crypto.randomBytes(40).toString("hex");
+};
+
+export const hashRefreshToken = (refreshToken: string): string => {
+    return crypto.hash("sha256", refreshToken);
 };

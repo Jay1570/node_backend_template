@@ -1,9 +1,9 @@
 import type { NextFunction, Response } from "express";
-import { sendUnauthorized } from "../core/responseHandler.js";
-import { verifyToken } from "../utils/jwtHelpers.js";
-import { getUserById } from "../modules/users/user.service.js";
-import type { AuthRequest } from "../types/AuthRequest.js";
-import db from "../db/db.js";
+import { sendUnauthorized } from "@/core/responseHandler.js";
+import { verifyToken } from "@/utils/jwtHelpers.js";
+import { getUserById } from "@/modules/users/user.service.js";
+import type { AuthRequest } from "@/types/AuthRequest.js";
+import db from "@/db/db.js";
 
 export const authenticateToken = async (
     req: AuthRequest,

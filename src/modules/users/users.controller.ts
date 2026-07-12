@@ -1,15 +1,28 @@
 import type { NextFunction, Request, Response } from "express";
-import { loginPayload, registerUserPayload } from "./users.validator.js";
-import { sendResponse } from "../../core/responseHandler.js";
-import { getUserByEmail, insertUser } from "./user.service.js";
-import { signJWT } from "../../utils/jwtHelpers.js";
-import type { User } from "../../types/User.js";
-import { comparePasswords } from "../../utils/hashPassword.js";
-import type { AuthRequest } from "../../types/AuthRequest.js";
-import { HttpStatusCode } from "../../config/HttpStatusCodes.js";
-import { ErrorResult } from "../../types/Result.js";
-import db from "../../db/db.js";
-import { validatePayload } from "../../core/validator.js";
+import {
+    loginPayload,
+    registerUserPayload,
+    refreshPayload,
+} from "@/modules/users/users.validator.js";
+import { sendResponse } from "@/core/responseHandler.js";
+import { getUserByEmail, insertUser } from "@/modules/users/user.service.js";
+import {
+    signJWT,
+    generateRefreshToken,
+    hashRefreshToken,
+} from "@/utils/jwtHelpers.js";
+import type { User } from "@/types/User.js";
+import { comparePasswords } from "@/utils/hashPassword.js";
+import type { AuthRequest } from "@/types/AuthRequest.js";
+import { HttpStatusCode } from "@/config/HttpStatusCodes.js";
+import { ErrorResult } from "@/types/Result.js";
+import db from "@/db/db.js";
+import { validatePayload } from "@/core/validator.js";
+import {
+    createOrUpdateRefreshToken,
+    getRefreshTokenByToken,
+    revokeRefreshToken,
+} from "@/modules/users/auth.service.js";
 
 export const registerUser = async (
     req: Request,
@@ -26,21 +39,44 @@ export const registerUser = async (
 
         const userPayload = result.data;
 
-        const userInsertResult = await insertUser(userPayload, db);
+        const userInsertResult = await insertUser(
+            {
+                email: userPayload.email,
+                name: userPayload.name,
+                password: userPayload.password,
+            },
+            db,
+        );
         if (!userInsertResult.success) {
             return next(userInsertResult);
         }
 
         const user = userInsertResult.data;
 
-        const jwtToken = signJWT({ id: user.id });
+        const accessToken = signJWT({ id: user.id });
+        const refreshToken = generateRefreshToken();
+        const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+
+        const tokenResult = await createOrUpdateRefreshToken(
+            user.id,
+            userPayload.deviceId,
+            refreshToken,
+            expiresAt,
+            userPayload.deviceName,
+            userPayload.os,
+            db,
+        );
+        if (!tokenResult.success) {
+            return next(tokenResult);
+        }
 
         return sendResponse(res, {
             success: true,
             statusCode: HttpStatusCode.CREATED,
             message: "User registered successfully",
             data: {
-                token: jwtToken,
+                accessToken,
+                refreshToken,
                 user: user,
             },
         });
@@ -93,16 +129,144 @@ export const loginUser = async (
             } satisfies ErrorResult);
         }
 
-        const jwtToken = signJWT({ id: safeUser.id });
+        const accessToken = signJWT({ id: safeUser.id });
+        const refreshToken = generateRefreshToken();
+        const refreshTokenHash = hashRefreshToken(refreshToken);
+        const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+
+        const tokenResult = await createOrUpdateRefreshToken(
+            safeUser.id,
+            payload.deviceId,
+            refreshTokenHash,
+            expiresAt,
+            payload.deviceName,
+            payload.os,
+            db,
+        );
+        if (!tokenResult.success) {
+            return next(tokenResult);
+        }
 
         return sendResponse(res, {
             success: true,
             statusCode: 200,
             message: "Login Successful",
             data: {
-                token: jwtToken,
+                accessToken,
+                refreshToken,
                 user: safeUser,
             },
+        });
+    } catch (err) {
+        return next(err);
+    }
+};
+
+export const refreshTokens = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+) => {
+    try {
+        const result = validatePayload(refreshPayload, req.body);
+        if (!result.success) {
+            return next(result);
+        }
+
+        const payload = result.data;
+        const tokenHash = hashRefreshToken(payload.refreshToken);
+
+        const tokenResult = await getRefreshTokenByToken(tokenHash, db);
+        if (!tokenResult.success) {
+            return next(tokenResult);
+        }
+
+        const session = tokenResult.data;
+
+        // Check expiration
+        if (new Date(session.expiresAt) < new Date()) {
+            return next({
+                success: false,
+                error: {
+                    code: HttpStatusCode.UNAUTHORIZED,
+                    message: "Refresh token expired",
+                },
+            } satisfies ErrorResult);
+        }
+
+        // Validate device context
+        if (session.deviceId !== payload.deviceId) {
+            return next({
+                success: false,
+                error: {
+                    code: HttpStatusCode.UNAUTHORIZED,
+                    message: "Invalid device context",
+                },
+            } satisfies ErrorResult);
+        }
+
+        const newAccessToken = signJWT({ id: session.userId });
+        const newRefreshToken = generateRefreshToken();
+        const newRefreshTokenHash = hashRefreshToken(newRefreshToken);
+        const newExpiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+
+        const updateResult = await createOrUpdateRefreshToken(
+            session.userId,
+            payload.deviceId,
+            newRefreshTokenHash,
+            newExpiresAt,
+            payload.deviceName,
+            payload.os,
+            db,
+        );
+        if (!updateResult.success) {
+            return next(updateResult);
+        }
+
+        return sendResponse(res, {
+            success: true,
+            statusCode: 200,
+            message: "Tokens refreshed successfully",
+            data: {
+                accessToken: newAccessToken,
+                refreshToken: newRefreshToken,
+            },
+        });
+    } catch (err) {
+        return next(err);
+    }
+};
+
+export const logoutUser = async (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction,
+) => {
+    try {
+        const { deviceId } = req.body;
+        if (!deviceId || typeof deviceId !== "string") {
+            return next({
+                success: false,
+                error: {
+                    code: HttpStatusCode.BAD_REQUEST,
+                    message: "deviceId is required",
+                },
+            } satisfies ErrorResult);
+        }
+
+        const revokeResult = await revokeRefreshToken(
+            req.user!.id,
+            deviceId,
+            db,
+        );
+        if (!revokeResult.success) {
+            return next(revokeResult);
+        }
+
+        return sendResponse(res, {
+            success: true,
+            statusCode: 200,
+            message: "Logged out successfully",
         });
     } catch (err) {
         return next(err);
